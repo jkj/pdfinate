@@ -107,13 +107,15 @@ licence, and a CMake package for `find_package(pdfinate)`.
 | `PDFINATE_USE_SYSTEM_<DEP>` | `OFF`           | Use an installed copy of `<DEP>` instead of the bundled one    |
 | `PDFINATE_<DEP>_TARGET`     | empty           | Use this existing target as `<DEP>` instead of the bundled one |
 | `PDFINATE_USE_LIBYUV`       | `ON`            | Use libyuv for SIMD pixel-format conversions                   |
+| `PDFINATE_ENABLE_BROTLI`    | `OFF`           | Upstream's experimental BrotliDecode filter (Brotli from outside) |
 | `PDFINATE_JPEG_SIMD`        | `ON`            | Build the bundled libjpeg-turbo's SIMD code (x86 needs `nasm`) |
 | `PDFINATE_BUILD_SAMPLES`    | `ON` at top level | Build `samples/pdfinate_info`                                |
 | `PDFINATE_INSTALL`          | `ON`            | Install the library and headers                                |
 | `BUILD_SHARED_LIBS`         | `OFF`           | Build a shared library instead (not tested yet)                |
 
 `<DEP>` is one of `ZLIB`, `JPEG`, `OPENJPEG`, `LCMS2`, `FREETYPE`, `HARFBUZZ`, `ABSEIL`,
-`ICU`, `HIGHWAY`, `LIBYUV`, `FAST_FLOAT` or `DRAGONBOX`. A `PDFINATE_<DEP>_TARGET` may name
+`ICU`, `HIGHWAY`, `LIBYUV`, `FAST_FLOAT`, `DRAGONBOX` or `BROTLI` (only with
+`PDFINATE_ENABLE_BROTLI`). A `PDFINATE_<DEP>_TARGET` may name
 several targets, for example `"absl::cleanup;absl::flat_hash_set;absl::inlined_vector"`.
 
 PDFium includes the last six by their path in Chromium's tree

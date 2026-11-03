@@ -116,6 +116,11 @@ pdfinate_gn_target("//:pdfium_noshorten_config" config)
 
 pdfinate_gn_target("//:pdfium_public_config" config)
 pdfinate_gn_list("//:pdfium_public_config" defines SET)
+if(PDFINATE_ENABLE_BROTLI)
+    pdfinate_gn_list("//:pdfium_public_config" defines APPEND
+        "PDF_ENABLE_BROTLI"
+    )
+endif()
 pdfinate_gn_list("//:pdfium_public_config" defines APPEND
     "PDF_USE_AGG"
 )
@@ -813,6 +818,15 @@ pdfinate_gn_list("//core/fxcodec:fxcodec" deps SET
     "//core/fxge:fxge"
 )
 pdfinate_gn_list("//core/fxcodec:fxcodec" defines SET)
+if(PDFINATE_ENABLE_BROTLI)
+    pdfinate_gn_list("//core/fxcodec:fxcodec" sources APPEND
+        "${PDFINATE_PDFIUM_DIR}/core/fxcodec/brotli/brotli_decoder.cpp"
+        "${PDFINATE_PDFIUM_DIR}/core/fxcodec/brotli/brotli_decoder.h"
+    )
+    pdfinate_gn_list("//core/fxcodec:fxcodec" deps APPEND
+        "//third_party/brotli:dec"
+    )
+endif()
 pdfinate_gn_list("//core/fxcodec:fxcodec" sources APPEND
     "${PDFINATE_PDFIUM_DIR}/core/fxcodec/jpeg/libjpeg_scanline_decoder.cpp"
     "${PDFINATE_PDFIUM_DIR}/core/fxcodec/jpeg/libjpeg_scanline_decoder.h"
@@ -2229,6 +2243,7 @@ set(PDFINATE_GN_DEPENDENCY_INCLUDES
     "third_party/abseil-cpp/absl/cleanup/cleanup.h"
     "third_party/abseil-cpp/absl/container/flat_hash_set.h"
     "third_party/abseil-cpp/absl/container/inlined_vector.h"
+    "third_party/brotli/include/brotli/decode.h"
     "third_party/dragonbox/src/include/dragonbox/dragonbox.h"
     "third_party/fast_float/src/include/fast_float/fast_float.h"
     "third_party/highway/src/hwy/foreach_target.h"
@@ -2252,6 +2267,7 @@ set(PDFINATE_GN_EXTERNAL
     "//build/config/freetype:freetype"
     "//build/config/sanitizers:cfi_icall_generalize_pointers"
     "//third_party/abseil-cpp:absl"
+    "//third_party/brotli:dec"
     "//third_party/icu:icuuc"
     "//third_party/icu:icuuc_public"
     "//third_party/libjpeg_turbo:libjpeg"

@@ -44,6 +44,7 @@ DEPS_PATHS = [
     "third_party/libjpeg_turbo",
     "third_party/libpng",
     "third_party/libyuv",
+    "third_party/brotli",
     "third_party/zlib",
 ]
 
@@ -79,6 +80,7 @@ SCOPE_SYMBOLIC = {
     "use_system_zlib": Sym("PDFINATE_USE_SYSTEM_ZLIB"),
     # Optional speed-ups.
     "pdf_use_libyuv": Sym("PDFINATE_USE_LIBYUV"),
+    "pdf_enable_brotli": Sym("PDFINATE_ENABLE_BROTLI"),
 }
 
 # Settings PDFinate fixes. Each is the value upstream would see in a standalone, non-Chromium build
@@ -109,7 +111,6 @@ SCOPE_FIXED = {
     "pdf_use_skia": False,
     "pdf_use_agg": True,
     "pdf_enable_freetype": True,
-    "pdf_enable_brotli": False,
     "pdf_enable_click_logging": False,
     "pdf_enable_fontations": False,
     "pdf_enable_rust_bmp": False,
@@ -557,7 +558,8 @@ class Evaluator:
 # library installs them. When one comes from the embedding project instead, cmake/deps.cmake writes a
 # forwarding header at each such path, so this records which paths PDFium uses.
 SHIMMABLE = re.compile(r'^\s*#\s*include\s+"(third_party/(?:abseil-cpp|icu/source/common|highway/src|'
-                       r'fast_float/src/include|dragonbox/src/include|libyuv/include)/[^"]+)"', re.M)
+                       r'fast_float/src/include|dragonbox/src/include|libyuv/include|brotli/include)/[^"]+)"',
+                       re.M)
 
 
 def dependency_includes(ev):

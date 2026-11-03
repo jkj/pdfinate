@@ -25,8 +25,10 @@
 #   LIBYUV      (none)                           SIMD pixel-format conversions (PDFINATE_USE_LIBYUV)
 #   FAST_FLOAT  (none)                           number parsing
 #   DRAGONBOX   (none)                           number formatting
+#   BROTLI      (none)                           the experimental BrotliDecode stream filter
+#                                                (PDFINATE_ENABLE_BROTLI; never bundled)
 #
-# Upstream has no system switch for the last six: PDFium includes their headers by their path in
+# Upstream has no system switch for the last seven: PDFium includes their headers by their path in
 # Chromium's tree ("third_party/abseil-cpp/absl/..."), not as the libraries install them. So when one
 # comes from outside, PDFinate writes a forwarding header at each such path PDFium uses — the list is
 # in the generated data — which includes the header as the library installs it (<absl/...>). It is the
@@ -35,7 +37,8 @@
 # An outside copy need not be the revision pdfium/DEPS pins, but PDFium is only tested with that one.
 # ===========================================================================
 
-set(_pdfinate_deps ZLIB JPEG OPENJPEG LCMS2 FREETYPE HARFBUZZ ABSEIL ICU HIGHWAY LIBYUV FAST_FLOAT DRAGONBOX)
+set(_pdfinate_deps ZLIB JPEG OPENJPEG LCMS2 FREETYPE HARFBUZZ ABSEIL ICU HIGHWAY LIBYUV FAST_FLOAT DRAGONBOX
+                   BROTLI)
 foreach(dep IN LISTS _pdfinate_deps)
     option(PDFINATE_USE_SYSTEM_${dep} "Use an installed ${dep} instead of the bundled copy" OFF)
     set(PDFINATE_${dep}_TARGET "" CACHE STRING
@@ -141,6 +144,19 @@ if(PDFINATE_USE_SYSTEM_DRAGONBOX AND NOT _pdfinate_DRAGONBOX)
     find_package(dragonbox REQUIRED)
     set(_pdfinate_DRAGONBOX dragonbox::dragonbox)
 endif()
+# Brotli: upstream's experimental BrotliDecode filter (pdf_enable_brotli), off unless asked for. PDFinate
+# does not bundle Brotli, so it needs a target or an installed copy.
+option(PDFINATE_ENABLE_BROTLI "Decode the experimental BrotliDecode stream filter (needs Brotli)" OFF)
+if(PDFINATE_ENABLE_BROTLI AND PDFINATE_USE_SYSTEM_BROTLI AND NOT _pdfinate_BROTLI)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(PDFINATE_BROTLI REQUIRED IMPORTED_TARGET libbrotlidec)
+    set(_pdfinate_BROTLI PkgConfig::PDFINATE_BROTLI)
+endif()
+if(PDFINATE_ENABLE_BROTLI AND NOT PDFINATE_USE_SYSTEM_BROTLI)
+    message(FATAL_ERROR "PDFinate: PDFINATE_ENABLE_BROTLI needs Brotli from outside: name its decoder in "
+                        "PDFINATE_BROTLI_TARGET, or set PDFINATE_USE_SYSTEM_BROTLI.")
+endif()
+
 if(PDFINATE_USE_SYSTEM_LIBYUV AND NOT _pdfinate_LIBYUV)
     message(FATAL_ERROR "PDFinate: libyuv installs no CMake package to find; name the embedding "
                         "project's libyuv target in PDFINATE_LIBYUV_TARGET instead.")
@@ -157,7 +173,8 @@ set(_pdfinate_forwarded
     "HIGHWAY|third_party/highway/src/|//third_party/highway:libhwy"
     "LIBYUV|third_party/libyuv/include/|//third_party/libyuv:libyuv"
     "FAST_FLOAT|third_party/fast_float/src/include/|//third_party/fast_float:fast_float"
-    "DRAGONBOX|third_party/dragonbox/src/include/|//third_party/dragonbox:dragonbox")
+    "DRAGONBOX|third_party/dragonbox/src/include/|//third_party/dragonbox:dragonbox"
+    "BROTLI|third_party/brotli/include/|//third_party/brotli:dec")
 foreach(_entry IN LISTS _pdfinate_forwarded)
     string(REPLACE "|" ";" _entry "${_entry}")
     list(GET _entry 0 _dep)
