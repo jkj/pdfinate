@@ -1,0 +1,3 @@
+# The build folder the README uses. Anchored to the top: deps/build is Chromium's build
+# repository, a submodule, not build output.
+/build/
