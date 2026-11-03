@@ -70,7 +70,7 @@ out of the `pdfium/` submodule. `deps/` mirrors the same paths, and both `pdfium
 ## Getting the source
 
 ```sh
-git clone --recursive https://github.com/<you>/pdfinate.git
+git clone --recursive https://github.com/jkj/pdfinate.git
 ```
 
 If you already cloned without `--recursive`:
@@ -139,7 +139,7 @@ XFA forms, JavaScript (V8) and Skia rendering are not supported.
 ```cmake
 include(FetchContent)
 FetchContent_Declare(pdfinate
-  GIT_REPOSITORY https://github.com/<you>/pdfinate.git
+  GIT_REPOSITORY https://github.com/jkj/pdfinate.git
   GIT_TAG        main)   # FetchContent initializes submodules recursively by default
 FetchContent_MakeAvailable(pdfinate)
 
