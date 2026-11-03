@@ -1,0 +1,16 @@
+@PACKAGE_INIT@
+
+# PDFium is C++, so a program linking it links the C++ runtime, which takes CMake's C++ linker. A
+# project written in C may not have enabled C++, and would then link without the runtime.
+get_property(_pdfinate_languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+if(NOT "CXX" IN_LIST _pdfinate_languages)
+    enable_language(CXX)
+endif()
+unset(_pdfinate_languages)
+
+# The system dependencies this pdfium was built against, found again for the program linking it.
+include(CMakeFindDependencyMacro)
+find_dependency(Threads)
+@PDFINATE_FIND_DEPENDENCIES@
+include("${CMAKE_CURRENT_LIST_DIR}/pdfinateTargets.cmake")
+check_required_components(pdfinate)
