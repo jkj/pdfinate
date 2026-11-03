@@ -10,7 +10,8 @@
 #                               executable are duplicate symbols, or worse, two versions silently mixed.
 #   PDFINATE_USE_SYSTEM_<DEP>   find an installed copy with find_package (or pkg-config) instead.
 #
-# With neither, the bundled copy under deps/ is built and folded into the pdfium library.
+# With neither, the bundled copy under deps/ is built and folded into the pdfium library, and fetched
+# first if it is not checked out (the Bundled section below).
 #
 #   <DEP>       upstream's name for the switch   what PDFium uses it for
 #   ZLIB        use_system_zlib                  Flate streams
@@ -229,6 +230,60 @@ function(pdfinate_write_forwarding_headers)
 endfunction()
 
 # --- Bundled ---------------------------------------------------------------------------------
+# The bundled copies are submodules a recursive checkout leaves out (update = none in .gitmodules), so
+# a project that supplies every one of them never downloads them. Each one this build compiles is
+# fetched here if it is missing, with git, when PDFinate is a git checkout: a clone, a submodule and
+# FetchContent's copy all are. Otherwise configure stops and names the command.
+set(_pdfinate_bundled
+    "ZLIB|third_party/zlib"
+    "JPEG|third_party/libjpeg_turbo"
+    "FREETYPE|third_party/freetype/src"
+    "HARFBUZZ|third_party/harfbuzz/src"
+    "ABSEIL|third_party/abseil-cpp"
+    "ICU|third_party/icu"
+    "HIGHWAY|third_party/highway/src"
+    "LIBYUV|third_party/libyuv"
+    "FAST_FLOAT|third_party/fast_float/src"
+    "DRAGONBOX|third_party/dragonbox/src")
+function(_pdfinate_missing_bundled out)
+    set(missing "")
+    foreach(entry IN LISTS _pdfinate_bundled)
+        string(REPLACE "|" ";" entry "${entry}")
+        list(GET entry 0 dep)
+        list(GET entry 1 path)
+        if(PDFINATE_USE_SYSTEM_${dep} OR (dep STREQUAL "LIBYUV" AND NOT PDFINATE_USE_LIBYUV))
+            continue()
+        endif()
+        file(GLOB contents "${PDFINATE_DEPS_DIR}/${path}/*")
+        if(NOT contents)
+            list(APPEND missing "deps/${path}")
+        endif()
+    endforeach()
+    set(${out} "${missing}" PARENT_SCOPE)
+endfunction()
+
+_pdfinate_missing_bundled(_missing)
+if(_missing)
+    find_package(Git QUIET)
+    if(GIT_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+        list(JOIN _missing ", " _names)
+        message(STATUS "PDFinate: fetching the bundled ${_names}")
+        execute_process(COMMAND "${GIT_EXECUTABLE}" submodule update --init --checkout -- ${_missing}
+                        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+        _pdfinate_missing_bundled(_missing)
+    endif()
+endif()
+if(_missing)
+    list(JOIN _missing " " _paths)
+    message(FATAL_ERROR "PDFinate: the bundled dependencies this build compiles are not checked out. "
+                        "From the top of PDFinate, run:\n"
+                        "  git submodule update --init --checkout -- ${_paths}\n"
+                        "or supply them from outside (PDFINATE_<DEP>_TARGET or PDFINATE_USE_SYSTEM_<DEP>).")
+endif()
+unset(_missing)
+unset(_names)
+unset(_paths)
+
 # lcms2, OpenJPEG, FreeType, HarfBuzz, highway, fast_float and dragonbox are built from PDFium's own
 # BUILD.gn files, through the generated data. These five have build files of their own in their own
 # repositories, which the generator does not read, so their recipes are here.

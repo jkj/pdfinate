@@ -24,9 +24,9 @@ CMake build around it.
   GN or Chromium toolchain required.
 - **Easy to embed.** Works with `add_subdirectory`, `FetchContent` and `find_package`, and
   exposes a single `pdfinate::pdfium` target.
-- **Shares dependencies with the embedding project.** Any dependency the embedding project
-  already builds (zlib, libjpeg, OpenJPEG, lcms2, FreeType, HarfBuzz) can be handed to
-  PDFinate by target name, so the final program holds one copy of each.
+- **Shares dependencies with the embedding project.** Any of the twelve libraries PDFium uses
+  that the embedding project already builds can be handed to PDFinate by target name, so the
+  final program holds one copy of each.
 - **Same API as PDFium.** The `public/fpdf*.h` headers come straight from upstream, so
   existing PDFium code, examples and documentation still apply.
 - **Easy to update.** What to compile comes from PDFium's own `BUILD.gn` files, translated
@@ -44,6 +44,7 @@ pdfinate/
 │   ├── deps/                 Recipes for bundled dependencies that BUILD.gn does not describe
 │   └── platform.cmake        Platform variables the generated data depends on
 ├── tools/gn2cmake.py         Regenerates cmake/generated/pdfium_gn.cmake
+├── tools/update_deps.py      Moves deps/ to the revisions pdfium/DEPS pins
 ├── samples/                  pdfinate_info, a small test program
 ├── pdfium/                   PDFium, unmodified (git submodule)
 └── deps/                     Dependencies PDFium normally fetches with gclient, as git
@@ -76,7 +77,17 @@ git clone --recursive https://github.com/jkj/pdfinate.git
 If you already cloned without `--recursive`:
 
 ```sh
-git submodule update --init --recursive
+git submodule update --init
+```
+
+That fetches PDFium and Chromium's `build` folder. The bundled dependencies under
+`deps/third_party/` are left out (`update = none` in `.gitmodules`), so a project that
+supplies all of them never downloads them. The first configure fetches each one the build
+compiles, with git. Where it cannot (a copy that is not a git checkout, or no network), it
+stops and prints the command, which can also be run beforehand:
+
+```sh
+git submodule update --init --checkout -- deps/third_party
 ```
 
 The dependency submodules are marked `shallow`, so only the pinned commit of each is
@@ -118,7 +129,7 @@ licence, and a CMake package for `find_package(pdfinate)`.
 `PDFINATE_ENABLE_BROTLI`). A `PDFINATE_<DEP>_TARGET` may name
 several targets, for example `"absl::cleanup;absl::flat_hash_set;absl::inlined_vector"`.
 
-PDFium includes the last six by their path in Chromium's tree
+PDFium includes the last seven by their path in Chromium's tree
 (`"third_party/abseil-cpp/absl/..."`) rather than as the libraries install them
 (`<absl/...>`). When one comes from outside, PDFinate writes a forwarding header at each
 such path PDFium uses, as Chromium does for a system ICU. A supplied target must carry its
@@ -140,7 +151,7 @@ XFA forms, JavaScript (V8) and Skia rendering are not supported.
 include(FetchContent)
 FetchContent_Declare(pdfinate
   GIT_REPOSITORY https://github.com/jkj/pdfinate.git
-  GIT_TAG        main)   # FetchContent initializes submodules recursively by default
+  GIT_TAG        master) # FetchContent initializes submodules recursively by default
 FetchContent_MakeAvailable(pdfinate)
 
 target_link_libraries(myapp PRIVATE pdfinate::pdfium)
@@ -152,8 +163,8 @@ You can also add PDFinate as a submodule of your own project and use
 ### Sharing dependencies your project already builds
 
 If your project builds its own copy of a library PDFium uses, name your target before
-adding PDFinate. PDFinate then links your copy and leaves its own out of `libpdfium.a`.
-Any or all of the twelve can come from your project:
+adding PDFinate. PDFinate then links your copy and leaves its own out of `libpdfium.a`, and
+never downloads its own. Any or all of the twelve can come from your project:
 
 ```cmake
 set(PDFINATE_ZLIB_TARGET     zlibstatic)
@@ -230,8 +241,9 @@ submodule is pinned to the revision listed in `pdfium/DEPS`.
 To move to a newer PDFium:
 
 1. Check out the new commit or branch in `pdfium/`.
-2. Update each `deps/` submodule to the revision in the new `pdfium/DEPS`. (A script to
-   automate this is planned.)
+2. Run `python3 tools/update_deps.py`. It checks out each `deps/` submodule at the revision
+   the new `pdfium/DEPS` pins, fetching a bundled one first if it is not checked out.
+   `--dry-run` shows what is pinned and what is checked out, and changes nothing.
 3. Run `python3 tools/gn2cmake.py` and review the diff of
    `cmake/generated/pdfium_gn.cmake`.
 4. If a dependency's own source list changed, update its recipe in `cmake/deps/`.

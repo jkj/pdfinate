@@ -22,8 +22,8 @@ option(PDFINATE_BUILD_SAMPLES "Build the sample programs in samples/" ${PROJECT_
 set(PDFINATE_PDFIUM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/pdfium")
 set(PDFINATE_DEPS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps")
 if(NOT EXISTS "${PDFINATE_PDFIUM_DIR}/BUILD.gn" OR NOT EXISTS "${PDFINATE_DEPS_DIR}/build/build_config.h")
-    message(FATAL_ERROR "PDFinate: the submodules are not checked out. "
-                        "Run: git submodule update --init --recursive")
+    message(FATAL_ERROR "PDFinate: pdfium/ and deps/build are not checked out. "
+                        "Run: git submodule update --init")
 endif()
 
 include(cmake/platform.cmake)
@@ -117,18 +117,31 @@ if(PDFINATE_INSTALL)
             FILES_MATCHING PATTERN "*.h")
     install(FILES "${PDFINATE_PDFIUM_DIR}/LICENSE" DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/pdfium)
 
-    # The licences of the bundled code inside the library, which a program shipping it ships too.
-    # FreeType is under the FreeType License or the GPL, at the user's choice; both texts go along.
-    set(_licenses
-        "abseil:${PDFINATE_DEPS_DIR}/third_party/abseil-cpp/LICENSE"
-        "icu:${PDFINATE_DEPS_DIR}/third_party/icu/LICENSE"
-        "highway:${PDFINATE_DEPS_DIR}/third_party/highway/src/LICENSE"
-        "fast_float:${PDFINATE_DEPS_DIR}/third_party/fast_float/src/LICENSE-MIT"
-        "fast_float:${PDFINATE_DEPS_DIR}/third_party/fast_float/src/LICENSE-APACHE"
-        "fast_float:${PDFINATE_DEPS_DIR}/third_party/fast_float/src/LICENSE-BOOST"
-        "dragonbox:${PDFINATE_DEPS_DIR}/third_party/dragonbox/src/LICENSE-Apache2-LLVM"
-        "dragonbox:${PDFINATE_DEPS_DIR}/third_party/dragonbox/src/LICENSE-Boost"
-        "agg23:${PDFINATE_PDFIUM_DIR}/third_party/agg23/copying")
+    # The licences of the bundled code inside the library, which a program shipping it ships too. A
+    # dependency supplied from outside is not in the library, and its licence is the supplier's to
+    # ship. FreeType is under the FreeType License or the GPL, at the user's choice: both texts go.
+    set(_licenses "agg23:${PDFINATE_PDFIUM_DIR}/third_party/agg23/copying")
+    if(NOT PDFINATE_USE_SYSTEM_ABSEIL)
+        list(APPEND _licenses "abseil:${PDFINATE_DEPS_DIR}/third_party/abseil-cpp/LICENSE")
+    endif()
+    if(NOT PDFINATE_USE_SYSTEM_ICU)
+        list(APPEND _licenses "icu:${PDFINATE_DEPS_DIR}/third_party/icu/LICENSE")
+    endif()
+    if(NOT PDFINATE_USE_SYSTEM_HIGHWAY)
+        list(APPEND _licenses "highway:${PDFINATE_DEPS_DIR}/third_party/highway/src/LICENSE")
+    endif()
+    if(NOT PDFINATE_USE_SYSTEM_FAST_FLOAT)
+        list(APPEND _licenses "fast_float:${PDFINATE_DEPS_DIR}/third_party/fast_float/src/LICENSE-MIT"
+                              "fast_float:${PDFINATE_DEPS_DIR}/third_party/fast_float/src/LICENSE-APACHE"
+                              "fast_float:${PDFINATE_DEPS_DIR}/third_party/fast_float/src/LICENSE-BOOST")
+    endif()
+    if(NOT PDFINATE_USE_SYSTEM_DRAGONBOX)
+        list(APPEND _licenses "dragonbox:${PDFINATE_DEPS_DIR}/third_party/dragonbox/src/LICENSE-Apache2-LLVM"
+                              "dragonbox:${PDFINATE_DEPS_DIR}/third_party/dragonbox/src/LICENSE-Boost")
+    endif()
+    if(PDFINATE_USE_LIBYUV AND NOT PDFINATE_USE_SYSTEM_LIBYUV)
+        list(APPEND _licenses "libyuv:${PDFINATE_DEPS_DIR}/third_party/libyuv/LICENSE")
+    endif()
     if(NOT PDFINATE_USE_SYSTEM_ZLIB)
         list(APPEND _licenses "zlib:${PDFINATE_DEPS_DIR}/third_party/zlib/LICENSE")
     endif()
