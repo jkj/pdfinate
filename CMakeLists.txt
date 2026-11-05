@@ -49,8 +49,12 @@ add_library(pdfinate_compile_options INTERFACE)
 target_compile_features(pdfinate_compile_options INTERFACE cxx_std_20)
 target_include_directories(pdfinate_compile_options INTERFACE "${PDFINATE_PDFIUM_DIR}" "${PDFINATE_DEPS_DIR}")
 if(WIN32)
+    # GN's default Windows configs (lean_and_mean, nominmax, unicode, winver). Without
+    # WIN32_LEAN_AND_MEAN, windows.h brings winspool.h, whose SetForm macro renames
+    # CPDF_AnnotContext::SetForm in any file that sees windows.h after the class.
     target_compile_definitions(pdfinate_compile_options INTERFACE
-        NOMINMAX UNICODE _UNICODE _CRT_SECURE_NO_DEPRECATE _WIN32_WINNT=0x0A00 WINVER=0x0A00)
+        WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE _CRT_SECURE_NO_DEPRECATE
+        _WIN32_WINNT=0x0A00 WINVER=0x0A00)
 endif()
 if(MSVC)
     target_compile_options(pdfinate_compile_options INTERFACE /utf-8 /Zc:__cplusplus)
